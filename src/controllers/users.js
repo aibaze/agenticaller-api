@@ -12,7 +12,8 @@ export const getUserById = asyncHandler(async (req, res, next) => {
   req.params.id.includes("@") || req.params.id.includes(".com");
 const query = isEmail
   ? { email: req.params.id }
-  : { _id: new ObjectId(req.params.id) };  const user = await User.find(query)
+  : { _id: new ObjectId(req.params.id) };  
+  const user = await User.findOne(query);
   
   if (!user) {
     throw new AppError('User not found', 404);

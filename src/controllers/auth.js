@@ -11,13 +11,24 @@ export const googleLogin = async (req, res, next) => {
     const googlePayload = await verifyGoogleTokenAndGetPayload(token);
     // Create our JWT
     const jwtToken = createToken({ email: googlePayload.email });
+
+    const user = await User.findOne({ email: googlePayload.email });
+
+    if (!user) {
+      user = await User.create({ 
+        email: googlePayload.email ,
+        name: googlePayload.name,
+        image: googlePayload.picture,
+        role: 'user'
+      });
+    }
+
+
     // Set both tokens in cookies
     setTokenCookie(res, jwtToken, token);
     res.status(200).json({
       status: 'success',
-      data: {
-        email: googlePayload.email
-      }
+      data: user
     });
   } catch (error) {
     next(error);
