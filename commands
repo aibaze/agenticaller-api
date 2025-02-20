@@ -1,0 +1,8 @@
+mkdir my-api
+cd my-api
+npm init -y
+mkdir src/routes
+mkdir src/controllers
+mkdir src/models
+mkdir src/middleware
+mkdir src/utils 
