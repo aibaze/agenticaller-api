@@ -7,6 +7,7 @@ import {
   deleteUser 
 } from '../controllers/users.js';
 import { validateCreateUser, validateUpdateUser } from '../middleware/validateUser.js';
+import { verifyGoogleToken} from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ const router = express.Router();
 router.get('/', getAllUsers);
 
 // GET /api/users/:id - Get user by ID
-router.get('/:id', getUserById);
+router.get('/:id',verifyGoogleToken, getUserById);
 
 // POST /api/users - Create new user
 router.post('/', validateCreateUser, createUser);

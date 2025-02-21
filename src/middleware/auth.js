@@ -1,8 +1,8 @@
 import { OAuth2Client } from 'google-auth-library';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { AppError } from './errorHandler.js';
+import jwt from 'jsonwebtoken';
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const verifyGoogleToken = asyncHandler(async (req, res, next) => {
   // Get token from header or cookie
@@ -13,23 +13,15 @@ export const verifyGoogleToken = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    const ticket = await googleClient.verifyIdToken({
-      idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID
-    });
-
-    const payload = ticket.getPayload();
+    // Replace Google verification with JWT verification
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // Add user data to request
-    req.user = {
-      email: payload.email,
-      name: payload.name,
-      picture: payload.picture,
-      googleId: payload.sub
-    };
+    req.user = decoded;
 
     next();
   } catch (error) {
+    console.log("error", error.message);
     throw new AppError('Invalid or expired token', 401);
   }
 });

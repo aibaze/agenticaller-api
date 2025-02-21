@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { encrypt } from '../utils/encryption.js';
 
 export const getAllUsers = asyncHandler(async (req, res) => {
   const users = await User.find();
@@ -18,6 +19,8 @@ const query = isEmail
   if (!user) {
     throw new AppError('User not found', 404);
   }
+
+  
   
   res.status(200).json(user);
 });
@@ -31,9 +34,16 @@ export const createUser = asyncHandler(async (req, res) => {
 });
 
 export const updateUser = asyncHandler(async (req, res) => {
+  const updateData = { ...req.body };
+  // If vapiKey is being updated, encrypt it
+  if (updateData.vapiKey) {
+    console.log("updateData.vapiKey",updateData.vapiKey)
+    updateData.vapiKey = encrypt(updateData.vapiKey);
+  }
+
   const user = await User.findByIdAndUpdate(
     req.params.id,
-    req.body,
+    updateData,
     { new: true, runValidators: true }
   );
 

@@ -21,7 +21,11 @@ const userSchema = new mongoose.Schema({
   vapiKey: {
     type: String,
     unique: true,
-    default: () => uuidv4(),
+    required: true
+  },
+  vapiOrgId: {
+    type: String,
+    unique: true,
     required: true
   },
   role: {

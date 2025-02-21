@@ -44,6 +44,7 @@ export const verifyGoogleTokenAndGetPayload = async (token) => {
     });
 
     return ticket.getPayload();
+    console.log("OK")
   } catch (error) {
     console.log("error",error.message)
     throw new AppError('Failed to verify Google token', 401);

@@ -10,6 +10,7 @@ import BugsnagPluginExpress from '@bugsnag/plugin-express';
 import userRoutes from './routes/users.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.js';
+import vapiRoutes from './routes/vapi.js';
 
 // Initialize Bugsnag
 Bugsnag.start({
@@ -53,6 +54,7 @@ app.use(cookieParser());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/v1/vapi', vapiRoutes);
 
 app.get('/api/healthy', (req, res) => {
   console.log("health check");
