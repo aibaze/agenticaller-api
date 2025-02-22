@@ -39,4 +39,23 @@ export const getAssistants = async (req, res, next) => {
   } catch (error) {
     next(new AppError(error.message || 'Failed to fetch VAPI assistants', 500));
   }
+};
+
+export const getPhoneNumbers = async (req, res, next) => {
+  try {
+    const { data } = await axios.get(`${VAPI_URL}/phone-number`, {
+      headers: {
+        'Authorization': `Bearer ${req.vapiToken}`
+      }
+    });
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        phoneNumbers: data
+      }
+    });
+  } catch (error) {
+    next(new AppError(error.message || 'Failed to fetch VAPI phone numbers', 500));
+  }
 }; 
