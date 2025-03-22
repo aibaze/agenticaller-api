@@ -13,7 +13,7 @@ export const googleLogin = async (req, res, next) => {
     const jwtToken = createToken({ email: googlePayload.email });
 
     const user = await User.findOne({ email: googlePayload.email });
-
+console.log(user,"user googleLogin");
     if (!user) {
       user = await User.create({ 
         email: googlePayload.email ,
@@ -23,9 +23,11 @@ export const googleLogin = async (req, res, next) => {
       });
     }
 
+    console.log(user,"user googleLogin");
 
     // Set both tokens in cookies
     setTokenCookie(res, jwtToken, token);
+    console.log(user,"user googleLogin");
     res.status(200).json({
       status: 'success',
       data: user
