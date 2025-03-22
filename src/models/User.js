@@ -21,12 +21,12 @@ const userSchema = new mongoose.Schema({
   vapiKey: {
     type: String,
     unique: true,
-    required: true
+    required: false
   },
   vapiOrgId: {
     type: String,
     unique: true,
-    required: true
+    required: false
   },
   role: {
     type: String,

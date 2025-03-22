@@ -30,9 +30,7 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
   ? [process.env.CORS_ORIGIN, 'https://app.agenticaller.com', 'https://app.agenticaller.com/','https://agenticaller.com/','https://agenticaller.com'] // Include with and without trailing slash
   : ['http://localhost:3000', 'http://localhost:3033'];
 
-console.log('CORS allowed origins:', allowedOrigins); // Debugging
 console.log('NODE_ENV:', process.env.NODE_ENV);
-console.log('CORS_ORIGIN env value:', process.env.CORS_ORIGIN);
 
 app.use(cors({
   origin: function(origin, callback) {
@@ -45,7 +43,6 @@ app.use(cors({
       callback(null, true);
     } else {
       console.log('CORS blocked origin:', origin); 
-      console.log('Allowed origins:', allowedOrigins);
       // In production, temporarily allow all origins to diagnose the issue
       if (process.env.NODE_ENV === 'production') {
         console.log('Temporarily allowing all origins in production for diagnosis');
