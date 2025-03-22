@@ -24,31 +24,31 @@ const app = express();
 app.use(Bugsnag.getPlugin('express').requestHandler);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-console.log(process.env.NODE_ENV,"process.env.NODE_ENV");
+
+// Improved CORS handling
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? [process.env.CORS_ORIGIN] // Make sure it's in array format for consistency
+  : ['http://localhost:3000', 'http://localhost:3033'];
+
+console.log('CORS allowed origins:', allowedOrigins); // Debugging
+console.log('NODE_ENV:', process.env.NODE_ENV);
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.CORS_ORIGIN 
-    : ['http://localhost:3000', 'http://localhost:3033'],
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin); // Debugging
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x_auth_token_sso']
 }));
-
-// Add explicit headers middleware
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', process.env.NODE_ENV === 'production' 
-    ? process.env.CORS_ORIGIN 
-    : req.headers.origin);
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x_auth_token_sso');
-  
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
 
 app.use(cookieParser());
 

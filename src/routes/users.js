@@ -18,10 +18,10 @@ router.get('/', getAllUsers);
 router.get('/:id',verifyGoogleToken, getUserById);
 
 // POST /api/users - Create new user
-router.post('/', validateCreateUser, createUser);
+router.post('/', createUser);
 
 // PUT /api/users/:id - Update user
-router.put('/:id', validateUpdateUser, updateUser);
+router.put('/:id', updateUser);
 
 // DELETE /api/users/:id - Delete user
 router.delete('/:id', deleteUser);

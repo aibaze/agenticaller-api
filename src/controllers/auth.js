@@ -6,7 +6,6 @@ import jwt from 'jsonwebtoken';
 
 export const googleLogin = async (req, res, next) => {
   try {
-    console.log(req.body,"req.body googleLogin");
     const { token } = req.body;
 
     const googlePayload = await verifyGoogleTokenAndGetPayload(token);
@@ -55,7 +54,6 @@ export const getMe = asyncHandler(async (req, res) => {
 export const checkSSOToken = async (req, res, next) => {
   try {
     const token = req.cookies.x_auth_token_sso;
-    console.log(token,"token checkSSOToken");
     if (!token || token === 'logged_out') {
       throw new AppError('No SSO token found in cookies', 401);
     }
