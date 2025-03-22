@@ -12,11 +12,13 @@ import { errorHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.js';
 import vapiRoutes from './routes/vapi.js';
 
-// Initialize Bugsnag
-Bugsnag.start({
-  apiKey: process.env.BUGSNAG_API_KEY,
-  plugins: [BugsnagPluginExpress]
-});
+// Initialize Bugsnag only if not already initialized
+if (!Bugsnag?._client) {
+  Bugsnag.start({
+    apiKey: process.env.BUGSNAG_API_KEY,
+    plugins: [BugsnagPluginExpress]
+  });
+}
 
 const app = express();
 

@@ -72,4 +72,32 @@ export const checkSSOToken = async (req, res, next) => {
   } catch (error) {
     next(new AppError('Invalid or expired token', 401));
   }
-}; 
+};
+
+export const googleLogout = asyncHandler(async (req, res) => {
+  // Get domain setting based on environment
+  const domain = process.env.NODE_ENV === 'production' ? '.agenticaller.com' : 'localhost';
+  
+  // Common cookie clearing options
+  const clearOptions = {
+    expires: new Date(Date.now() + 1 * 1000), // Expires in 1 seconds
+    httpOnly: true,
+    domain: domain,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    path: '/'
+  };
+  
+  // Ensure secure is true when sameSite is 'none'
+  if (clearOptions.sameSite === 'none') {
+    clearOptions.secure = true;
+  }
+  
+  // Clear JWT token cookie
+  res.cookie('x_auth_token_sso', 'logged_out', clearOptions);
+  
+  // Clear Google token cookie
+  res.cookie('google_token', 'logged_out', clearOptions);
+  
+  res.status(200).json({ status: 'success', message: 'Successfully logged out' });
+}); 
