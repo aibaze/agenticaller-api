@@ -15,6 +15,7 @@ export const createToken = (payload) => {
 };
 
 export const setTokenCookie = (res, token, googleToken) => {
+  console.log("setTokenCookie", "arranco");
   const expiresIn = parseInt(process.env.JWT_COOKIE_EXPIRES_IN) || 90; // default 90 days
 
   const cookieOptions = {
