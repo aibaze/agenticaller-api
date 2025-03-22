@@ -20,13 +20,9 @@ const userSchema = new mongoose.Schema({
   googleId: String,
   vapiKey: {
     type: String,
-    unique: true,
-    required: false
   },
   vapiOrgId: {
     type: String,
-    unique: true,
-    required: false
   },
   role: {
     type: String,
