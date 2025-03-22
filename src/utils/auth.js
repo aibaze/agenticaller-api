@@ -23,6 +23,7 @@ export const setTokenCookie = (res, token, googleToken) => {
       Date.now() + expiresIn * 24 * 60 * 60 * 1000
     ),
     httpOnly: true,
+    domain: process.env.NODE_ENV === 'production' ? '.agenticaller.com' : 'localhost',
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax'
   };
