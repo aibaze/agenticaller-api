@@ -15,7 +15,6 @@ export const createToken = (payload) => {
 };
 
 export const setTokenCookie = (res, token, googleToken) => {
-  console.log("setTokenCookie starting with NODE_ENV:", process.env.NODE_ENV);
   const expiresIn = parseInt(process.env.JWT_COOKIE_EXPIRES_IN) || 90; // default 90 days
 
   // For cross-site cookies in modern browsers, we need proper settings
@@ -37,7 +36,6 @@ export const setTokenCookie = (res, token, googleToken) => {
   }
 
   // Set our JWT token
-  console.log("Setting cookie with options:", JSON.stringify(cookieOptions));
   res.cookie('x_auth_token_sso', token, cookieOptions);
   
   // Set Google token with shorter expiration (1 hour)
@@ -49,7 +47,6 @@ export const setTokenCookie = (res, token, googleToken) => {
   res.cookie('google_token', googleToken, googleCookieOptions);
   
   // Log response headers to verify cookies are being set
-  console.log("Response headers:", res.getHeaders ? res.getHeaders() : "Headers not available");
 };
 
 export const verifyGoogleTokenAndGetPayload = async (token) => {
