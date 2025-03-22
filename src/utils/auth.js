@@ -28,12 +28,13 @@ export const setTokenCookie = (res, token, googleToken) => {
 
   // Set our JWT token
   res.cookie('x_auth_token_sso', token, cookieOptions);
-  
+  console.log("res setTokenCookie", token, cookieOptions);
   // Set Google token with shorter expiration (1 hour)
   res.cookie('google_token', googleToken, {
     ...cookieOptions,
     expires: new Date(Date.now() + 60 * 60 * 1000) // 1 hour
   });
+  console.log("res setTokenCookie", googleToken, cookieOptions);
 };
 
 export const verifyGoogleTokenAndGetPayload = async (token) => {
