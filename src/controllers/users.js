@@ -4,7 +4,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { encrypt } from '../utils/encryption.js';
 
 export const getAllUsers = asyncHandler(async (req, res) => {
-  const users = await User.find();
+  const users = await User.find().select('-vapiKey -vapiOrgId');
   res.status(200).json(users);
 });
 
@@ -14,12 +14,13 @@ export const getUserById = asyncHandler(async (req, res, next) => {
 const query = isEmail
   ? { email: req.params.id }
   : { _id: new ObjectId(req.params.id) };  
-  const user = await User.findOne(query);
+  const user = await User.findOne(query).select('-vapiKey -vapiOrgId');
   
   if (!user) {
     throw new AppError('User not found', 404);
   }
 
+  
   
   
   res.status(200).json(user);
