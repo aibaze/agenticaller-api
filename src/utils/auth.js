@@ -25,7 +25,7 @@ export const setTokenCookie = (res, token, googleToken) => {
     ),
     httpOnly: true,
     // Remove the leading dot which is causing issues in some browsers
-    domain:'app.agenticaller.com',
+    domain:'.agenticaller.com',
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     path: '/'  // Ensure cookie is available across the entire site
