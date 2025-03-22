@@ -24,6 +24,7 @@ const app = express();
 app.use(Bugsnag.getPlugin('express').requestHandler);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+console.log(process.env.NODE_ENV,"process.env.NODE_ENV");
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? process.env.CORS_ORIGIN 
@@ -89,13 +90,13 @@ process.on('unhandledRejection', err => {
   });
 });
 
-// Handle SIGTERM
+/* // Handle SIGTERM
 process.on('SIGTERM', () => {
   console.log('👋 SIGTERM RECEIVED. Shutting down gracefully');
   server.close(() => {
     console.log('💥 Process terminated!');
   });
-});
+}); */
 
 // Store server in a variable for graceful shutdown
 const PORT = process.env.PORT || 3001;
