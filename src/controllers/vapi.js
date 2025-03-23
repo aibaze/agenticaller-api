@@ -37,6 +37,7 @@ export const getAssistants = async (req, res, next) => {
       }
     });
   } catch (error) {
+    console.log("error",error.message,"error vapi")
     next(new AppError(error.message || 'Failed to fetch VAPI assistants', 500));
   }
 };
