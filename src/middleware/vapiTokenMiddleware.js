@@ -70,12 +70,12 @@ const vapiTokenMiddleware = async (req, res, next) => {
       token = generateJWT(payload, privateKey, options);
       cacheToken(userEmail, token, 3600); // Cache for 60 minutes
     }
-    
+    console.log("user", user)
     req.vapiToken = token;
     req.userKey = user.vapiKey;
     next();
   } catch (error) {
-    console.error('Token generation failed:', error.message);
+    console.error('Token generation failed:', error.message,user);
     res.status(500).json({ error: 'Failed to generate token' });
   }
 };
