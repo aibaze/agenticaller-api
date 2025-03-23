@@ -52,6 +52,8 @@ const vapiTokenMiddleware = async (req, res, next) => {
       if (!user.vapiKey || !user.vapiOrgId) {
         throw new Error('User missing required VAPI credentials');
       }
+      req.userKey = user.vapiKey;
+
 
       // Decrypt the VAPI key
       const privateKey = decrypt(user.vapiKey);
@@ -70,9 +72,7 @@ const vapiTokenMiddleware = async (req, res, next) => {
       token = generateJWT(payload, privateKey, options);
       cacheToken(userEmail, token, 3600); // Cache for 60 minutes
     }
-    console.log("user", user)
     req.vapiToken = token;
-    req.userKey = user.vapiKey;
     next();
   } catch (error) {
     console.error('Token generation failed:', error.message,user);
