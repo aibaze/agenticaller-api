@@ -72,6 +72,7 @@ const vapiTokenMiddleware = async (req, res, next) => {
     }
     
     req.vapiToken = token;
+    req.userKey = user.vapiKey;
     next();
   } catch (error) {
     console.error('Token generation failed:', error.message);
