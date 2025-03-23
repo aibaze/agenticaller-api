@@ -35,7 +35,7 @@ const handleJWTExpiredError = () =>
 export const errorHandler = (err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
-console.log("aca-erooooooorr", err);
+console.log("aca-erooooooorr", err, err.name);
   if (process.env.NODE_ENV === 'development') {
     return sendErrorDev(err, res);
   }
@@ -48,6 +48,7 @@ console.log("aca-erooooooorr", err);
   if (error.name === 'ValidationError') error = handleValidationErrorDB(error);
   if (error.name === 'JsonWebTokenError') error = handleJWTError();
   if (error.name === 'TokenExpiredError') error = handleJWTExpiredError();
+
 
   sendErrorProd(error, res);
 };
