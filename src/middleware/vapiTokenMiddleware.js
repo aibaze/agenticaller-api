@@ -34,13 +34,15 @@ function getCachedToken(email) {
 const vapiTokenMiddleware = async (req, res, next) => {
   try {
     const userEmail = req.user?.email;
+    console.log("vapiTokenMiddleware", )
     
     if (!userEmail) {
       throw new Error('User email not found');
     }
+    console.log("userEmail", userEmail)
 
     let token = getCachedToken(userEmail);
-    
+    console.log("token", token)
     if (!token) {
       // Fetch user from database
       const user = await User.findOne({ email: userEmail });
