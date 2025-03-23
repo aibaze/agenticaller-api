@@ -21,8 +21,7 @@ export const verifyGoogleToken = asyncHandler(async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.log("error", error.message);
-    console.log("token", token);
+    console.log("error", error.message,"google verify token ",error.name);
     throw new AppError('Invalid or expired token', 401);
   }
 });

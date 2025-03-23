@@ -17,7 +17,7 @@ export const getCalls = async (req, res, next) => {
       }
     });
   } catch (error) {
-    console.log("error",error.message)
+    console.log("getcalls",error.message, error.name)
     next(new AppError(error.message || 'Failed to fetch VAPI calls', 500));
   }
 };
@@ -37,7 +37,8 @@ export const getAssistants = async (req, res, next) => {
       }
     });
   } catch (error) {
-    console.log("error",error.message,"error vapi")
+    console.log("getassistants",error.message, error.name)
+
     next(new AppError(error.message || 'Failed to fetch VAPI assistants', 500));
   }
 };

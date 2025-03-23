@@ -38,7 +38,6 @@ export const updateUser = asyncHandler(async (req, res) => {
   const updateData = { ...req.body };
   // If vapiKey is being updated, encrypt it
   if (updateData.vapiKey) {
-    console.log("updateData.vapiKey",updateData.vapiKey)
     updateData.vapiKey = encrypt(updateData.vapiKey);
   }
 
