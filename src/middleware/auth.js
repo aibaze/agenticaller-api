@@ -21,7 +21,6 @@ export const verifyGoogleToken = asyncHandler(async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.log("error", error.message,"google verify token ",error.name);
     throw new AppError('Invalid or expired token', 401);
   }
 });
@@ -30,7 +29,6 @@ export const verifyGoogleToken = asyncHandler(async (req, res, next) => {
 export const checkRole = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
-      console.log("role", req.user.role);
       throw new AppError('You do not have permission to perform this action', 403);
     }
     next();
