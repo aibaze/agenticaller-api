@@ -6,7 +6,7 @@ import {verifyGoogleToken} from '../middleware/auth.js';
 const router = express.Router();
 
 
-router.get('/calls'/* verifyGoogleToken */,vapiTokenMiddleware, getCalls);
+router.get('/calls',verifyGoogleToken,vapiTokenMiddleware, getCalls);
 router.get('/assistants',verifyGoogleToken,vapiTokenMiddleware, getAssistants);
 router.get('/phone-numbers',verifyGoogleToken,vapiTokenMiddleware, getPhoneNumbers);
 
