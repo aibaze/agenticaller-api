@@ -24,6 +24,7 @@ export const getCalls = async (req, res, next) => {
 
 export const getAssistants = async (req, res, next) => {
   try {
+    console.log("getassistants",req.vapiToken, VAPI_URL)
     const { data } = await axios.get(`${VAPI_URL}/assistant`, {
       headers: {
         'Authorization': `Bearer ${req.vapiToken}`
