@@ -52,6 +52,7 @@ const vapiTokenMiddleware = async (req, res, next) => {
       if (!user.vapiKey || !user.vapiOrgId) {
         throw new Error('User missing required VAPI credentials');
       }
+      console.log("user ", user?.vapiKey, user?.vapiOrgId)
       req.userKey = user.vapiKey;
 
 
