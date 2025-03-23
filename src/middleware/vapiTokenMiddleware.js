@@ -56,7 +56,7 @@ const vapiTokenMiddleware = async (req, res, next) => {
 
       // Decrypt the VAPI key
       const privateKey = decrypt(user.vapiKey);
-      req.userKey = user.privateKey;
+      req.userKey = privateKey;
 
       const payload = {
         orgId: user.vapiOrgId,
