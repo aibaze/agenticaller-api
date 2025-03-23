@@ -39,10 +39,8 @@ const vapiTokenMiddleware = async (req, res, next) => {
     if (!userEmail) {
       throw new Error('User email not found');
     }
-    console.log("userEmail", userEmail)
 
     let token = getCachedToken(userEmail);
-    console.log("token", token)
     if (!token) {
       // Fetch user from database
       const user = await User.findOne({ email: userEmail });
@@ -54,12 +52,11 @@ const vapiTokenMiddleware = async (req, res, next) => {
       if (!user.vapiKey || !user.vapiOrgId) {
         throw new Error('User missing required VAPI credentials');
       }
-      console.log("user ", user?.vapiKey, user?.vapiOrgId)
-      req.userKey = user.vapiKey;
 
 
       // Decrypt the VAPI key
       const privateKey = decrypt(user.vapiKey);
+      req.userKey = user.privateKey;
 
       const payload = {
         orgId: user.vapiOrgId,
