@@ -40,8 +40,8 @@ const vapiTokenMiddleware = async (req, res, next) => {
       throw new Error('User email not found');
     }
 
-    let token = getCachedToken(userEmail);
-    if (!token) {
+    /* let token = getCachedToken(userEmail);
+    if (!token) { */
       // Fetch user from database
       const user = await User.findOne({ email: userEmail });
       if (!user) {
@@ -58,7 +58,7 @@ const vapiTokenMiddleware = async (req, res, next) => {
       const privateKey = decrypt(user.vapiKey);
       req.userKey = privateKey;
 
-      const payload = {
+   /*    const payload = {
         orgId: user.vapiOrgId,
         email: userEmail,
         iat: Math.floor(Date.now() / 1000),
@@ -67,12 +67,12 @@ const vapiTokenMiddleware = async (req, res, next) => {
       const options = {
         expiresIn: '1h',
         algorithm: 'HS256',
-      };
+      }; */
 
-      token = generateJWT(payload, privateKey, options);
-      cacheToken(userEmail, token, 3600); // Cache for 60 minutes
-    }
-    req.vapiToken = token;
+   /*    token = generateJWT(payload, privateKey, options);
+      cacheToken(userEmail, token, 3600); // Cache for 60 minutes */
+  /*   } */
+  /*   req.vapiToken = token; */
     next();
   } catch (error) {
     console.error('Token generation failed:', error.message,user);
