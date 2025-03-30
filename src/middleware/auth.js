@@ -6,7 +6,7 @@ import IpTracker from '../models/IpTracker.js';
 
 // Rate limit values
 const MAX_REQUESTS = 10;  // Maximum requests per IP
-const WINDOW_MS = 60 * 60 * 1000;  // Reset window (1 hour in milliseconds)
+const WINDOW_MS = 24 * 60 * 60 * 1000;  // Reset window (1 day in milliseconds)
 
 export const verifyGoogleToken = asyncHandler(async (req, res, next) => {
   // Get token from header or cookie
