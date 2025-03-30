@@ -2,10 +2,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { AppError } from './errorHandler.js';
 import jwt from 'jsonwebtoken';
-
-// In-memory store for tracking IP requests
-// Structure: { ip: { count: number, resetTime: timestamp } }
-const ipRequestTracker = new Map();
+import IpTracker from '../models/IpTracker.js';
 
 // Rate limit values
 const MAX_REQUESTS = 10;  // Maximum requests per IP
@@ -46,50 +43,49 @@ export const verifyIPRequestCount = asyncHandler(async (req, res, next) => {
   // Get the client's IP address
   const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
   
-  // Check if IP is in the tracker
-  if (!ipRequestTracker.has(ip)) {
-    // First request from this IP
-    ipRequestTracker.set(ip, {
+  // Calculate the reset time for new entries
+  const resetTime = new Date(Date.now() + WINDOW_MS);
+  
+  // Try to find an existing record for this IP
+  let ipTracker = await IpTracker.findOne({ ip });
+  
+  if (!ipTracker) {
+    // First request from this IP - create a new record
+    ipTracker = await IpTracker.create({
+      ip,
       count: 1,
-      resetTime: Date.now() + WINDOW_MS
+      resetTime
     });
     req.ipRequestCount = 1;
   } else {
-    const tracker = ipRequestTracker.get(ip);
-    
     // Check if the reset time has passed
-    if (Date.now() > tracker.resetTime) {
+    if (Date.now() > ipTracker.resetTime) {
       // Reset the counter
-      ipRequestTracker.set(ip, {
-        count: 1,
-        resetTime: Date.now() + WINDOW_MS
-      });
+      ipTracker.count = 1;
+      ipTracker.resetTime = resetTime;
+      await ipTracker.save();
       req.ipRequestCount = 1;
     } else {
       // Increment the counter
-      if (tracker.count >= MAX_REQUESTS) {
+      if (ipTracker.count >= MAX_REQUESTS) {
         // Rate limit exceeded
-        req.ipRequestCount = tracker.count;
+        req.ipRequestCount = ipTracker.count;
         throw new AppError('Rate limit exceeded. Try again later.', 429);
       }
       
       // Update counter
-      tracker.count += 1;
-      ipRequestTracker.set(ip, tracker);
-      req.ipRequestCount = tracker.count;
-      req.maxQuotaReached = tracker.count >= MAX_REQUESTS;
+      ipTracker.count += 1;
+      await ipTracker.save();
+      req.ipRequestCount = ipTracker.count;
+      req.maxQuotaReached = ipTracker.count >= MAX_REQUESTS;
     }
   }
 
   next();
 });
 
-// Cleanup function to prevent memory leaks (can be called periodically)
-export const cleanupIpTracker = () => {
-  const now = Date.now();
-  for (const [ip, data] of ipRequestTracker.entries()) {
-    if (now > data.resetTime) {
-      ipRequestTracker.delete(ip);
-    }
-  }
+// Cleanup function to prevent database bloat (can be scheduled to run periodically)
+export const cleanupIpTracker = async () => {
+  const now = new Date();
+  await IpTracker.deleteMany({ resetTime: { $lt: now } });
 };
