@@ -1,7 +1,8 @@
 import express from 'express';
 import { getCalls, getAssistants ,getPhoneNumbers} from '../controllers/vapi.js';
 import vapiTokenMiddleware from '../middleware/vapiTokenMiddleware.js';
-import {verifyGoogleToken} from '../middleware/auth.js';
+
+import {verifyGoogleToken} from '../middleware/auth.js'
 
 const router = express.Router();
 
