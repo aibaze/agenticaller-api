@@ -70,7 +70,7 @@ export const verifyIPRequestCount = asyncHandler(async (req, res, next) => {
       if (ipTracker.count >= MAX_REQUESTS) {
         // Rate limit exceeded
         req.ipRequestCount = ipTracker.count;
-        throw new AppError('Rate limit exceeded. Try again later.', 429);
+        throw new AppError('Rate limit exceeded.', 429);
       }
       
       // Update counter

@@ -11,7 +11,6 @@ import userRoutes from './routes/users.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.js';
 import vapiRoutes from './routes/vapi.js';
-import { cleanupIpTracker } from './middleware/auth.js';
 
 // Initialize Bugsnag only if not already initialized
 if (!Bugsnag?._client) {
@@ -31,7 +30,7 @@ app.use(express.urlencoded({ extended: true }));
 // Improved CORS handling with better debugging
 const allowedOrigins = process.env.NODE_ENV === 'production'
   ? [process.env.CORS_ORIGIN, 'https://app.agenticaller.com', 'https://app.agenticaller.com/','https://agenticaller.com/','https://agenticaller.com'] // Include with and without trailing slash
-  : ['http://localhost:3000', 'http://localhost:3033'];
+  : ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:3033'];
 
 
 app.use(cors({
@@ -110,13 +109,3 @@ const PORT = process.env.PORT || 3001;
 const server = app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
-
-// Schedule periodic cleanup of expired IP tracker records (every hour)
-setInterval(async () => {
-  try {
-    await cleanupIpTracker();
-    console.log('IP tracker cleanup completed');
-  } catch (error) {
-    console.error('IP tracker cleanup failed:', error);
-  }
-}, 60 * 60 * 1000); // 1 hour interval 
