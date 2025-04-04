@@ -174,17 +174,12 @@ router.get('/upcoming', asyncHandler(async (req, res) => {
 router.get('/user/:id', asyncHandler(async (req, res) => {
   const callReminders = await CallReminder.find({ userId: req.params.id });
   
-  if (!callReminders.length) {
-    return res.status(404).json({
-      status: 'fail',
-      message: 'Create a call reminder first'
-    });
-  }
+  
   
   res.status(200).json({
     status: 'success',
     data: {
-      callReminders
+      callReminders: !callReminders.length ? [] : callReminders
     }
   });
 }));
