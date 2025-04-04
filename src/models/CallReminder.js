@@ -56,6 +56,10 @@ const callReminderSchema = new mongoose.Schema({
   lastExecuted: {
     type: Date,
     default: null
+  },
+  timesExecuted: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true
