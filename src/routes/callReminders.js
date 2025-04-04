@@ -1,8 +1,10 @@
 import express from 'express';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import CallReminder from '../models/CallReminder.js';
+import CallExecution from '../models/CallExecution.js';
 import { verifyGoogleToken } from '../middleware/auth.js';
 import axios from 'axios';
+import { getCallExecutionStats } from '../utils/callExecutionStats.js';
 
 const router = express.Router();
 
@@ -11,28 +13,66 @@ const router = express.Router();
 const executeCallReminder = async (reminder) => {
   console.log(`Executing reminder: ${reminder.title} (ID: ${reminder._id})`);
   
-  const body = {
-    "assistantId": process.env.CALL_REMINDER_ASSISTANT_ID,
-    "assistantOverrides": {
-      "variableValues": {
-       "customerName": reminder.calleeName,
-       "reminderSummary": reminder.callPurposeSummary,
-       "time": reminder.time,
-       "reminderSentence": reminder.callPurpose,
-      }
-    },
-    "customer": {
-      "number": reminder.phoneNumber?.replace(/ /g, '')
-    },
-    "phoneNumberId": process.env.OWN_VAPI_PHONE_NUMBER_ID
-  }
-
-  const { data } = await axios.post(`${process.env.VAPI_API_URL}/call/phone`, body, {
-    headers: {
-      'Authorization': process.env.OWN_VAPI_PHONE_NUMBER_ID
+  // Create a pending execution record
+  const execution = await CallExecution.create({
+    reminderId: reminder._id,
+    userId: reminder.userId,
+    status: 'pending',
+    reminderData: {
+        title: reminder.title,
+        phoneNumber: reminder.phoneNumber,
+        recurrence: reminder.recurrence,
+        hour: reminder.hour,
+        minutes: reminder.minutes
     }
   });
-  return data;
+  
+  
+  try {
+    const body = {
+      "assistantId": process.env.CALL_REMINDER_ASSISTANT_ID,
+      "assistantOverrides": {
+        "variableValues": {
+         "customerName": reminder.calleeName,
+         "reminderSummary": reminder.callPurposeSummary,
+         "time": reminder.time,
+         "reminderSentence": reminder.callPurpose,
+        }
+      },
+      "customer": {
+        "number": reminder.phoneNumber?.replace(/ /g, '')
+      },
+      "phoneNumberId": process.env.OWN_VAPI_PHONE_NUMBER_ID
+    }
+  
+    const { data } = await axios.post(`${process.env.VAPI_API_URL}/call/phone`, body, {
+      headers: {
+        'Authorization': process.env.OWN_VAPI_PHONE_NUMBER_ID
+      }
+    });
+    
+    // Calculate execution duration
+    
+    // Update execution record with success
+    await CallExecution.findByIdAndUpdate(execution._id, {
+      status: 'success',
+      callId: data.id ,
+    });
+    
+    return data;
+  } catch (error) {
+    // Calculate execution duration even for failed calls
+    
+    // Update execution record with error information
+    await CallExecution.findByIdAndUpdate(execution._id, {
+      status: 'failed',
+      error: true,
+      callId: "call error",
+      errorMessage: error.message || 'Unknown error',
+    });
+    
+    throw error;
+  }
 };
 
 // Middleware to protect routes
@@ -174,12 +214,80 @@ router.get('/upcoming', asyncHandler(async (req, res) => {
 router.get('/user/:id', asyncHandler(async (req, res) => {
   const callReminders = await CallReminder.find({ userId: req.params.id });
   
-  
-  
   res.status(200).json({
     status: 'success',
     data: {
       callReminders: !callReminders.length ? [] : callReminders
+    }
+  });
+}));
+
+// Get execution history for a specific reminder
+router.get('/:id/executions', asyncHandler(async (req, res) => {
+  const executions = await CallExecution.find({ reminderId: req.params.id })
+    .sort({ date: -1 });
+  
+  res.status(200).json({
+    status: 'success',
+    results: executions.length,
+    data: {
+      executions
+    }
+  });
+}));
+
+// Get all executions for a user
+router.get('/user/:id/executions', asyncHandler(async (req, res) => {
+  const executions = await CallExecution.find({ userId: req.params.id })
+    .sort({ date: -1 });
+  
+  res.status(200).json({
+    status: 'success',
+    results: executions.length,
+    data: {
+      executions
+    }
+  });
+}));
+
+// Get executions for a specific date range
+router.get('/executions', asyncHandler(async (req, res) => {
+  const { startDate, endDate, status, userId } = req.query;
+  
+  const query = {};
+  
+  // Add date range filters if provided
+  if (startDate || endDate) {
+    query.date = {};
+    
+    if (startDate) {
+      query.date.$gte = new Date(startDate);
+    }
+    
+    if (endDate) {
+      query.date.$lte = new Date(endDate);
+    }
+  }
+  
+  // Add status filter if provided
+  if (status && ['success', 'failed', 'pending'].includes(status)) {
+    query.status = status;
+  }
+  
+  // Add userId filter if provided
+  if (userId) {
+    query.userId = userId;
+  }
+  
+  const executions = await CallExecution.find(query)
+    .sort({ date: -1 })
+    .limit(100); // Limit results to prevent performance issues
+  
+  res.status(200).json({
+    status: 'success',
+    results: executions.length,
+    data: {
+      executions
     }
   });
 }));
@@ -321,8 +429,9 @@ router.post('/:id/execute', asyncHandler(async (req, res) => {
   try {
     const callResult = await executeCallReminder(callReminder);
     
-    // Update the lastExecuted timestamp
+    // Update the lastExecuted timestamp and increment timesExecuted
     callReminder.lastExecuted = new Date();
+    callReminder.timesExecuted = (callReminder.timesExecuted || 0) + 1;
     
     // If this is a one-time reminder, set isActive to false
     // This ensures one-time reminders can only be executed once
@@ -351,6 +460,25 @@ router.post('/:id/execute', asyncHandler(async (req, res) => {
       error: error.message
     });
   }
+}));
+
+// Get call execution statistics
+router.get('/statistics', asyncHandler(async (req, res) => {
+  const { startDate, endDate, userId, reminderId } = req.query;
+  
+  const stats = await getCallExecutionStats({
+    startDate,
+    endDate,
+    userId,
+    reminderId
+  });
+  
+  res.status(200).json({
+    status: 'success',
+    data: {
+      stats
+    }
+  });
 }));
 
 export default router; 
