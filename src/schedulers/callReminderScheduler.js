@@ -137,6 +137,13 @@ export const fetchAllCallReminders = async () => {
         try {
           const call = await executeCallReminder(reminder);
           console.log('Call execution result:', call);
+          // Update the lastExecuted timestamp
+          await CallReminder.findByIdAndUpdate(reminder._id, {
+            lastExecuted: now,
+            timesExecuted: reminder.timesExecuted + 1
+          });
+          
+          console.log('Call execution result:', call);
         } catch (error) {
           console.error('Error executing call reminder:', error.message);
           console.error('Error executing call reminder:', error.response.data);
