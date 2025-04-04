@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import CallReminder from '../models/CallReminder.js';
+import CallExecution from '../models/CallExecution.js';
 import axios from 'axios';
 
 
@@ -7,36 +8,77 @@ import axios from 'axios';
 const executeCallReminder = async (reminder) => {
   console.log(`Executing reminder: ${reminder.title} (ID: ${reminder._id})`);
   
-
-  const body = {
-    "assistantId": process.env.CALL_REMINDER_ASSISTANT_ID,
-    "assistantOverrides": {
-      "variableValues": {
-       "customerName":reminder.calleeName,
-       "reminderSummary":reminder.callPurposeSummary,
-       "time":`at ${reminder.hour}:${reminder.minutes}`,
-       "reminderSentence":reminder.callPurpose,
-      }
-    },
-    "customer": {
-      "number": reminder.phoneNumber
-    },
-    "phoneNumberId": process.env.OWN_VAPI_PHONE_NUMBER_ID
-  }
-
-  console.log('Body:', body);
-
-
-  const { data } = await axios.post(`${process.env.VAPI_API_URL}/call/phone`, body, {
-    headers: {
-      'Authorization': process.env.OWN_VAPI_PRIVATE_KEY
+  // Create a pending execution record
+  const execution = await CallExecution.create({
+    reminderId: reminder._id,
+    userId: reminder.userId,
+    status: 'pending',
+    reminderData: {
+      title: reminder.title,
+      phoneNumber: reminder.phoneNumber,
+      recurrence: reminder.recurrence,
+      hour: reminder.hour,
+      minutes: reminder.minutes
     }
   });
-  return data
+  
 
+  try {
+    const body = {
+      "assistantId": process.env.CALL_REMINDER_ASSISTANT_ID,
+      "assistantOverrides": {
+        "variableValues": {
+         "customerName": reminder.calleeName,
+         "reminderSummary": reminder.callPurposeSummary,
+         "time": `at ${reminder.hour} ${reminder.minutes}`,
+         "reminderSentence": reminder.callPurpose,
+        }
+      },
+      "customer": {
+        "number": reminder.phoneNumber
+      },
+      "phoneNumberId": process.env.OWN_VAPI_PHONE_NUMBER_ID
+    }
+  
+  
+    const { data } = await axios.post(`${process.env.VAPI_API_URL}/call/phone`, body, {
+      headers: {
+        'Authorization': process.env.OWN_VAPI_PRIVATE_KEY
+      }
+    });
+    
+
+    // Update execution record with success
+    await CallExecution.findByIdAndUpdate(execution._id, {
+      status: 'success',
+      callId: data.id ,
+    });
+    
+    return data;
+  } catch (error) {
+    
+    // Update execution record with error information
+    await CallExecution.findByIdAndUpdate(execution._id, {
+      status: 'failed',
+      error: true,
+      callId: "call error",
+      errorMessage: error.message || 'Unknown error',
+    });
+    
+    throw error;
+  }
 };
 
 
+/**
+ * Fetch all call reminders from the database and execute those that are due
+ * 
+ * Handles different recurrence types:
+ * - one-time: Executes only once at scheduled time, then becomes inactive
+ * - daily: Executes once per day at scheduled time
+ * - weekly: Executes once per week at scheduled time
+ * - monthly: Executes once per month at scheduled time
+ */
 export const fetchAllCallReminders = async () => {
   try {
     console.log('Fetching call reminders - Scheduled job started at:', new Date().toISOString());
@@ -137,24 +179,28 @@ export const fetchAllCallReminders = async () => {
         try {
           const call = await executeCallReminder(reminder);
           console.log('Call execution result:', call);
-          // Update the lastExecuted timestamp
-          await CallReminder.findByIdAndUpdate(reminder._id, {
-            lastExecuted: now,
-            timesExecuted: reminder.timesExecuted + 1
-          });
           
-          console.log('Call execution result:', call);
+          // Update the lastExecuted timestamp and increment timesExecuted
+          const updateData = {
+            lastExecuted: now,
+            timesExecuted: (reminder.timesExecuted || 0) + 1
+          };
+          
+          // If this is a one-time reminder, also set isActive to false
+          if (reminder.recurrence === 'one-time') {
+            updateData.isActive = false;
+            console.log(`One-time reminder ${reminder.title} set to inactive after execution`);
+          }
+          
+          await CallReminder.findByIdAndUpdate(reminder._id, updateData);
+          
+          console.log(`Reminder executed and updated: ${reminder.title}`);
         } catch (error) {
           console.error('Error executing call reminder:', error.message);
-          console.error('Error executing call reminder:', error.response.data);
+          if (error.response && error.response.data) {
+            console.error('Error executing call reminder:', error.response.data);
+          }
         }
-        
-        // Update the lastExecuted timestamp
-        await CallReminder.findByIdAndUpdate(reminder._id, {
-          lastExecuted: now
-        });
-        
-        console.log(`Reminder executed and updated: ${reminder.title}`);
       } else {
         console.log(`Skipping reminder: ${reminder.title} (already executed for this recurrence period, LAST EXECUTED: ${reminder.lastExecuted}, RECURRENCE: ${reminder.recurrence})`);
       }
