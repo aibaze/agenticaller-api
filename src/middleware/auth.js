@@ -86,6 +86,35 @@ export const verifyIPRequestCount = asyncHandler(async (req, res, next) => {
 
 // Cleanup function to prevent database bloat (can be scheduled to run periodically)
 export const cleanupIpTracker = async () => {
-  const now = new Date();
-  await IpTracker.deleteMany({ resetTime: { $lt: now } });
+  try {
+    console.log('Running IP tracker cleanup job at:', new Date().toISOString());
+    
+    const now = new Date();
+    
+    // Find expired IP trackers
+    const expiredTrackers = await IpTracker.find({ resetTime: { $lt: now } });
+    console.log(`Found ${expiredTrackers.length} expired IP trackers to clean up`);
+    
+    // Delete expired IP trackers
+    if (expiredTrackers.length > 0) {
+      const result = await IpTracker.deleteMany({ resetTime: { $lt: now } });
+      console.log(`Deleted ${result.deletedCount} expired IP trackers`);
+    }
+    
+    // Get statistics on remaining IP trackers
+    const activeTrackers = await IpTracker.find({});
+    console.log(`${activeTrackers.length} active IP trackers remain in the database`);
+    
+    // Optional: perform additional maintenance as needed
+    
+    return {
+      deleted: expiredTrackers.length,
+      remaining: activeTrackers.length
+    };
+  } catch (error) {
+    console.error('Error cleaning up IP trackers:', error);
+    return {
+      error: error.message
+    };
+  }
 };
