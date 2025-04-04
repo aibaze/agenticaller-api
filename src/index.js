@@ -11,6 +11,8 @@ import userRoutes from './routes/users.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.js';
 import vapiRoutes from './routes/vapi.js';
+import callReminderRoutes from './routes/callReminders.js';
+import { scheduleCallReminderJobs } from './schedulers/callReminderScheduler.js';
 
 // Initialize Bugsnag only if not already initialized
 if (!Bugsnag?._client) {
@@ -30,7 +32,7 @@ app.use(express.urlencoded({ extended: true }));
 // Improved CORS handling with better debugging
 const allowedOrigins = process.env.NODE_ENV === 'production'
   ? [process.env.CORS_ORIGIN, 'https://app.agenticaller.com', 'https://app.agenticaller.com/','https://agenticaller.com/','https://agenticaller.com'] // Include with and without trailing slash
-  : ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:3033'];
+  : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3033'];
 
 
 app.use(cors({
@@ -62,6 +64,7 @@ app.use(cookieParser());
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/v1/vapi', vapiRoutes);
+app.use('/api/v1/call-reminders', callReminderRoutes);
 
 app.get('/api/healthy', (req, res) => {
   console.log("health check");
@@ -76,6 +79,10 @@ app.use(errorHandler);
 try {
   await mongoose.connect(process.env.MONGODB_URI);
   console.log('Connected to MongoDB');
+  
+  // Initialize schedulers
+  scheduleCallReminderJobs();
+  console.log('Schedulers initialized');
 } catch (err) {
   console.error('MongoDB connection error:', err);
 }

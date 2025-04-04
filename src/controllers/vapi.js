@@ -1,14 +1,10 @@
 import axios from 'axios';
 import { AppError } from '../middleware/errorHandler.js';
-import User from '../models/User.js';
-import { decrypt } from '../utils/encryption.js';
 
-const VAPI_URL = 'https://api.vapi.ai'
-const VAPI_PHONE_NUMBER_ID = '1df2736e-bcf5-4977-82ef-ae1ddae38aa7'
 
 export const getCalls = async (req, res, next) => {
   try {
-    const { data } = await axios.get(`${VAPI_URL}/call`, {
+    const { data } = await axios.get(`${process.env.VAPI_API_URL}/call`, {
       headers: {
         'Authorization':  req.userKey
       }
@@ -25,9 +21,29 @@ export const getCalls = async (req, res, next) => {
   }
 };
 
+export const getCallById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { data } = await axios.get(`${process.env.VAPI_API_URL}/call/${id}`, {
+      headers: {
+        'Authorization': process.env.OWN_VAPI_PRIVATE_KEY
+      }
+    });
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        call: data
+      }
+    });
+  } catch (error) {
+    next(new AppError(error.message || 'Failed to fetch VAPI call by id', 500));
+  }
+};
+
 export const getAssistants = async (req, res, next) => {
   try {
-    const { data } = await axios.get(`${VAPI_URL}/assistant`, {
+    const { data } = await axios.get(`${process.env.VAPI_API_URL}/assistant`, {
       headers: {
         'Authorization': req.userKey
       }
@@ -47,7 +63,7 @@ export const getAssistants = async (req, res, next) => {
 
 export const getPhoneNumbers = async (req, res, next) => {
   try {
-    const { data } = await axios.get(`${VAPI_URL}/phone-number`, {
+    const { data } = await axios.get(`${process.env.VAPI_API_URL}/phone-number`, {
       headers: {
         'Authorization': req.userKey
       }
@@ -64,7 +80,7 @@ export const getPhoneNumbers = async (req, res, next) => {
   }
 }; 
 
-export const createCall = async (req, res, next) => {
+/* export const createCall = async (req, res, next) => {
   const reqBody = req.body;
   try {
     const leadHasCitizenShip = reqBody.questionnaire[0].answer;
@@ -96,11 +112,11 @@ export const createCall = async (req, res, next) => {
       "customer": {
         "number": reqBody.customerPhone
       },
-      "phoneNumberId": VAPI_PHONE_NUMBER_ID
+      "phoneNumberId": process.env.OWN_VAPI_PHONE_NUMBER_ID
     }
 
 
-    const { data } = await axios.post(`${VAPI_URL}/call/phone`, body, {
+    const { data } = await axios.post(`${process.env.VAPI_API_URL}/call/phone`, body, {
       headers: {
         'Authorization': privateKey
       }
@@ -118,4 +134,4 @@ export const createCall = async (req, res, next) => {
     }
     next(new AppError(error.message || 'Failed to create VAPI call', 500));
   }
-};
+}; */
