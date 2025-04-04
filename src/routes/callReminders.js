@@ -137,6 +137,10 @@ router.get('/upcoming', asyncHandler(async (req, res) => {
         // Execute if it's a different month or year
         return lastExecMonth !== currentMonth || lastExecYear !== currentYear;
         
+      case 'one-time':
+        // For one-time reminders, if it has been executed before, it won't run again
+        return false;
+        
       default:
         // For any other case, treat as a one-time reminder that should only run once
         return false;
@@ -193,7 +197,7 @@ router.post('/', asyncHandler(async (req, res) => {
     callPurpose,
     calleeName,
     callPurposeSummary,
-    recurrence,
+    recurrence, // Valid options: 'daily', 'weekly', 'monthly', 'one-time'
     phoneNumber,
     time,
     userId
@@ -203,6 +207,15 @@ router.post('/', asyncHandler(async (req, res) => {
     return res.status(400).json({
       status: 'fail',
       message: 'User ID is required'
+    });
+  }
+  
+  // Validate recurrence
+  const validRecurrenceOptions = ['daily', 'weekly', 'monthly', 'one-time'];
+  if (recurrence && !validRecurrenceOptions.includes(recurrence)) {
+    return res.status(400).json({
+      status: 'fail',
+      message: 'Invalid recurrence option. Valid options are: daily, weekly, monthly, one-time'
     });
   }
   
@@ -315,11 +328,21 @@ router.post('/:id/execute', asyncHandler(async (req, res) => {
     
     // Update the lastExecuted timestamp
     callReminder.lastExecuted = new Date();
+    
+    // If this is a one-time reminder, set isActive to false
+    // This ensures one-time reminders can only be executed once
+    if (callReminder.recurrence === 'one-time') {
+      callReminder.isActive = false;
+      console.log(`One-time reminder ${callReminder.title} set to inactive after manual execution`);
+    }
+    
     await callReminder.save();
     
     res.status(200).json({
       status: 'success',
-      message: 'Call reminder executed successfully',
+      message: callReminder.recurrence === 'one-time' 
+        ? 'One-time reminder executed successfully and set to inactive' 
+        : 'Call reminder executed successfully',
       data: {
         callReminder,
         callResult
