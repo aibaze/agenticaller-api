@@ -62,7 +62,7 @@ const executeCallReminder = async (reminder) => {
     await CallExecution.findByIdAndUpdate(execution._id, {
       status: CALL_EXECUTION_STATUS.CALL_ERROR,
       error: true,
-      callId: "call error",
+      callId:  CALL_EXECUTION_STATUS.CALL_ERROR,
       errorMessage: error.message || 'Unknown error',
     });
     
@@ -184,7 +184,7 @@ export const fetchAllCallReminders = async () => {
           // Update the lastExecuted timestamp and increment timesExecuted
           const updateData = {
             lastExecuted: now,
-            timesExecuted: (reminder.timesExecuted || 0) + 1
+            timesExecuted: reminder.timesExecuted  + 1
           };
           
           // If this is a one-time reminder, also set isActive to false
@@ -197,6 +197,11 @@ export const fetchAllCallReminders = async () => {
           
           console.log(`Reminder executed and updated: ${reminder.title}`);
         } catch (error) {
+          // Update the reminder with the error
+          await CallReminder.findByIdAndUpdate(reminder._id, {
+            timesExecuted: reminder.timesExecuted  + 1,
+            callsError: reminder.callsError + 1
+          });
           console.error('Error executing call reminder:', error.message);
           if (error.response && error.response.data) {
             console.error('Error executing call reminder:', error.response.data);
@@ -232,7 +237,7 @@ export const enrichCallExecutionStatuses = async () => {
     for (const execution of callExecutions) {
       try {
         // Skip if no valid callId
-        if (!execution.callId || execution.callId === 'call error') {
+        if (!execution.callId || execution.callId ===  CALL_EXECUTION_STATUS.CALL_ERROR) {
           console.log(`Skipping execution ${execution._id} - Invalid call ID: ${execution.callId}`);
           continue;
         }
@@ -245,6 +250,8 @@ export const enrichCallExecutionStatuses = async () => {
             'Authorization': process.env.OWN_VAPI_PRIVATE_KEY
           }
         });
+        const currentReminder = await CallReminder.findById(execution.reminderId);
+
         
         // If call doesn't have a startedAt timestamp, it wasn't taken
         if (!data.startedAt) {
@@ -253,6 +260,9 @@ export const enrichCallExecutionStatuses = async () => {
           await CallExecution.findByIdAndUpdate(execution._id, {
             callTaken: false,
             status: CALL_EXECUTION_STATUS.CALL_NOT_TAKEN
+          });
+          await CallReminder.findByIdAndUpdate(execution.reminderId, {
+            callsNotTaken: currentReminder.callsNotTaken + 1
           });
           
           continue;
@@ -275,7 +285,9 @@ export const enrichCallExecutionStatuses = async () => {
           callCost: data.cost || null,
           endedReason: data.endedReason || null
         });
-        
+        await CallReminder.findByIdAndUpdate(execution.reminderId, {
+          callsTaken: currentReminder.callsTaken + 1
+        });
         console.log(`Updated call execution ${execution._id} with completed status`);
         
       } catch (error) {

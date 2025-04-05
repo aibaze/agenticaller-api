@@ -2,8 +2,8 @@ import express from 'express';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import CallReminder from '../models/CallReminder.js';
 import CallExecution from '../models/CallExecution.js';
-import { verifyGoogleToken } from '../middleware/auth.js';
 import axios from 'axios';
+import { CALL_EXECUTION_STATUS } from '../utils/constants.js';
 import { getCallExecutionStats } from '../utils/callExecutionStats.js';
 
 const router = express.Router();
@@ -67,7 +67,7 @@ const executeCallReminder = async (reminder) => {
     await CallExecution.findByIdAndUpdate(execution._id, {
       status: 'failed',
       error: true,
-      callId: "call error",
+      callId:   CALL_EXECUTION_STATUS.CALL_ERROR,
       errorMessage: error.message || 'Unknown error',
     });
     
@@ -408,6 +408,8 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Manually trigger a reminder execution
+
+/* 
 router.post('/:id/execute', asyncHandler(async (req, res) => {
   const callReminder = await CallReminder.findById(req.params.id);
   
@@ -461,7 +463,7 @@ router.post('/:id/execute', asyncHandler(async (req, res) => {
     });
   }
 }));
-
+ */
 // Get call execution statistics
 router.get('/statistics', asyncHandler(async (req, res) => {
   const { startDate, endDate, userId, reminderId } = req.query;

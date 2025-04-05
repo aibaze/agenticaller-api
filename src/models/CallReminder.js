@@ -60,6 +60,18 @@ const callReminderSchema = new mongoose.Schema({
   timesExecuted: {
     type: Number,
     default: 0
+  },
+  callsTaken: {
+    type: Number,
+    default: 0
+  },
+  callsNotTaken: {
+    type: Number,
+    default: 0
+  },
+  callsError: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true
