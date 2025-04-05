@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import CallReminder from '../models/CallReminder.js';
 import CallExecution from '../models/CallExecution.js';
 import axios from 'axios';
+import { CALL_EXECUTION_STATUS } from '../utils/constants.js';
 
 
 
@@ -12,7 +13,7 @@ const executeCallReminder = async (reminder) => {
   const execution = await CallExecution.create({
     reminderId: reminder._id,
     userId: reminder.userId,
-    status: 'pending',
+    status: CALL_EXECUTION_STATUS.PENDING,
     reminderData: {
       title: reminder.title,
       phoneNumber: reminder.phoneNumber,
@@ -50,18 +51,18 @@ const executeCallReminder = async (reminder) => {
 
     // Update execution record with success
     await CallExecution.findByIdAndUpdate(execution._id, {
-      status: 'success',
+      status: CALL_EXECUTION_STATUS.CALL_MADE,
       callId: data.id ,
     });
-    
+
     return data;
   } catch (error) {
     
     // Update execution record with error information
     await CallExecution.findByIdAndUpdate(execution._id, {
-      status: 'failed',
+      status: CALL_EXECUTION_STATUS.CALL_ERROR,
       error: true,
-      callId: "call error",
+      callId:  CALL_EXECUTION_STATUS.CALL_ERROR,
       errorMessage: error.message || 'Unknown error',
     });
     
@@ -183,7 +184,7 @@ export const fetchAllCallReminders = async () => {
           // Update the lastExecuted timestamp and increment timesExecuted
           const updateData = {
             lastExecuted: now,
-            timesExecuted: (reminder.timesExecuted || 0) + 1
+            timesExecuted: reminder.timesExecuted  + 1
           };
           
           // If this is a one-time reminder, also set isActive to false
@@ -196,6 +197,11 @@ export const fetchAllCallReminders = async () => {
           
           console.log(`Reminder executed and updated: ${reminder.title}`);
         } catch (error) {
+          // Update the reminder with the error
+          await CallReminder.findByIdAndUpdate(reminder._id, {
+            timesExecuted: reminder.timesExecuted  + 1,
+            callsError: reminder.callsError + 1
+          });
           console.error('Error executing call reminder:', error.message);
           if (error.response && error.response.data) {
             console.error('Error executing call reminder:', error.response.data);
@@ -216,6 +222,89 @@ export const fetchAllCallReminders = async () => {
 };
 
 /**
+ * Update call execution statuses by fetching their status from the API
+ * Runs every hour to check on calls that have been initiated
+ */
+export const enrichCallExecutionStatuses = async () => {
+  try {
+    console.log('Updating call execution statuses - Scheduled job started at:', new Date().toISOString());
+    
+    // Find all call executions with 'call-made' status
+    const callExecutions = await CallExecution.find({ status: CALL_EXECUTION_STATUS.CALL_MADE });
+    
+    console.log(`Found ${callExecutions.length} call executions with '${CALL_EXECUTION_STATUS.CALL_MADE}' status`);
+    
+    for (const execution of callExecutions) {
+      try {
+        // Skip if no valid callId
+        if (!execution.callId || execution.callId ===  CALL_EXECUTION_STATUS.CALL_ERROR) {
+          console.log(`Skipping execution ${execution._id} - Invalid call ID: ${execution.callId}`);
+          continue;
+        }
+        
+        console.log(`Processing call execution: ${execution._id}, Call ID: ${execution.callId}`);
+        
+        // Fetch call details from VAPI API
+        const { data } = await axios.get(`${process.env.VAPI_API_URL}/call/${execution.callId}`, {
+          headers: {
+            'Authorization': process.env.OWN_VAPI_PRIVATE_KEY
+          }
+        });
+        const currentReminder = await CallReminder.findById(execution.reminderId);
+
+        
+        // If call doesn't have a startedAt timestamp, it wasn't taken
+        if (!data.startedAt) {
+          console.log(`Call ${execution.callId} was not taken`);
+          
+          await CallExecution.findByIdAndUpdate(execution._id, {
+            callTaken: false,
+            status: CALL_EXECUTION_STATUS.CALL_NOT_TAKEN
+          });
+          await CallReminder.findByIdAndUpdate(execution.reminderId, {
+            callsNotTaken: currentReminder.callsNotTaken + 1
+          });
+          
+          continue;
+        }
+        
+        // Calculate call duration in seconds
+        let callDuration = null;
+        if (data.startedAt && data.endedAt) {
+          const startTime = new Date(data.startedAt);
+          const endTime = new Date(data.endedAt);
+          callDuration = Math.floor((endTime - startTime) / 1000); // Duration in seconds
+        }
+        
+        // Update execution with call details
+        await CallExecution.findByIdAndUpdate(execution._id, {
+          callTaken: true,
+          status: CALL_EXECUTION_STATUS.CALL_COMPLETED,
+          callSummary: data.analysis?.summary || null,
+          callDuration: callDuration,
+          callCost: data.cost || null,
+          endedReason: data.endedReason || null
+        });
+        await CallReminder.findByIdAndUpdate(execution.reminderId, {
+          callsTaken: currentReminder.callsTaken + 1
+        });
+        console.log(`Updated call execution ${execution._id} with completed status`);
+        
+      } catch (error) {
+        console.error(`Error updating call execution ${execution._id}:`, error.message);
+        if (error.response && error.response.data) {
+          console.error('API Error Details:', error.response.data);
+        }
+      }
+    }
+    
+    console.log('Updating call execution statuses - Scheduled job completed at:', new Date().toISOString());
+  } catch (error) {
+    console.error('Error in enrichCallExecutionStatuses scheduled job:', error);
+  }
+};
+
+/**
  * Schedule jobs
  */
 export const scheduleCallReminderJobs = () => {
@@ -223,9 +312,15 @@ export const scheduleCallReminderJobs = () => {
   // Format: '* * * * *' = At every minute
   cron.schedule('* * * * *', async () => {
     // Fetch and process call reminders
-
     await fetchAllCallReminders();
   });
   
-  console.log('Call reminder scheduled jobs initialized (running every minute)');
+  // Schedule job to run every hour to enrich call execution statuses
+  // Format: '0 * * * *' = At minute 0 of every hour
+  cron.schedule('0 * * * *', async () => {
+    // Update call execution statuses
+    await enrichCallExecutionStatuses();
+  });
+  
+  console.log('Call reminder scheduled jobs initialized (reminders: every minute, status updates: every hour)');
 }; 
