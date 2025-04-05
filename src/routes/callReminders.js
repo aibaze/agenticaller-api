@@ -388,10 +388,8 @@ router.put('/:id', asyncHandler(async (req, res) => {
 
 // Delete a call reminder (soft delete by setting isActive to false)
 router.delete('/:id', asyncHandler(async (req, res) => {
-  const callReminder = await CallReminder.findByIdAndUpdate(
-    req.params.id,
-    { isActive: false },
-    { new: true }
+  const callReminder = await CallReminder.deleteOne(
+    {_id: req.params.id}
   );
   
   if (!callReminder) {
