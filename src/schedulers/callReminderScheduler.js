@@ -255,7 +255,7 @@ export const enrichCallExecutionStatuses = async () => {
         
         // If call doesn't have a startedAt timestamp, it wasn't taken
         const didntStarted = !data.startedAt || !data.analysis?.summary 
-        const falledIntoVoicemail = !data.transcript?.toLowerCase().includes("Hi there")
+        const falledIntoVoicemail = false // IMPROVE HOW TO DETECT THIS https://docs.vapi.ai/calls/voicemail-detection
         if (didntStarted || falledIntoVoicemail) {
           console.log(`Call ${execution.callId} was not taken`);
           
