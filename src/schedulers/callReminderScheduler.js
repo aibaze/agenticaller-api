@@ -254,7 +254,9 @@ export const enrichCallExecutionStatuses = async () => {
 
         
         // If call doesn't have a startedAt timestamp, it wasn't taken
-        if (!data.startedAt) {
+        const didntStarted = !data.startedAt || !data.analysis?.summary 
+        const falledIntoVoicemail = !data.transcript?.toLowerCase().includes("Hi there")
+        if (didntStarted || falledIntoVoicemail) {
           console.log(`Call ${execution.callId} was not taken`);
           
           await CallExecution.findByIdAndUpdate(execution._id, {
@@ -267,6 +269,8 @@ export const enrichCallExecutionStatuses = async () => {
           
           continue;
         }
+
+        
         
         // Calculate call duration in seconds
         let callDuration = null;
@@ -279,7 +283,7 @@ export const enrichCallExecutionStatuses = async () => {
         // Update execution with call details
         await CallExecution.findByIdAndUpdate(execution._id, {
           callTaken: true,
-          status: CALL_EXECUTION_STATUS.CALL_COMPLETED,
+          status: CALL_EXECUTION_STATUS.CALL_TAKEN,
           callSummary: data.analysis?.summary || null,
           callDuration: callDuration,
           callCost: data.cost || null,

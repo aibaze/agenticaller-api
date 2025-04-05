@@ -45,7 +45,7 @@ export const getCallExecutionStats = async (options = {}) => {
   // Get completed call executions
   const completedExecutions = await CallExecution.countDocuments({
     ...query,
-    status: CALL_EXECUTION_STATUS.CALL_COMPLETED
+    status: CALL_EXECUTION_STATUS.CALL_TAKEN
   });
   
   // Get failed executions
