@@ -50,16 +50,16 @@ const executeCallReminder = async (reminder) => {
 
     // Update execution record with success
     await CallExecution.findByIdAndUpdate(execution._id, {
-      status: 'success',
+      status: 'call-made',
       callId: data.id ,
     });
-    
+
     return data;
   } catch (error) {
     
     // Update execution record with error information
     await CallExecution.findByIdAndUpdate(execution._id, {
-      status: 'failed',
+      status: 'call-error',
       error: true,
       callId: "call error",
       errorMessage: error.message || 'Unknown error',

@@ -39,7 +39,23 @@ const callExecutionSchema = new mongoose.Schema({
     type: Object,
     default: null,
     description: 'Snapshot of the reminder data at the time of execution'
-  }
+  },
+  callTaken: {
+    type: Boolean,
+    default: false
+  },
+  callSummary: {
+    type: String,
+    default: null
+  },
+  callDuration: {
+    type: Number,
+    default: null
+  },
+  callCost: {
+    type: Number,
+    default: null
+  },
 }, {
   timestamps: true
 });
