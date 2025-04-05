@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { CALL_EXECUTION_STATUS } from '../utils/constants.js';
 
 const callExecutionSchema = new mongoose.Schema({
   reminderId: {
@@ -20,7 +21,8 @@ const callExecutionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    default: '',
+    enum: Object.values(CALL_EXECUTION_STATUS),
+    default: CALL_EXECUTION_STATUS.PENDING,
     required: true
   },
   error: {
@@ -54,6 +56,10 @@ const callExecutionSchema = new mongoose.Schema({
   },
   callCost: {
     type: Number,
+    default: null
+  },
+  endedReason: {
+    type: String,
     default: null
   },
 }, {

@@ -1,4 +1,5 @@
 import CallExecution from '../models/CallExecution.js';
+import { CALL_EXECUTION_STATUS } from './constants.js';
 
 /**
  * Get statistics about call executions for a specific time period
@@ -41,31 +42,33 @@ export const getCallExecutionStats = async (options = {}) => {
   // Get total executions
   const totalExecutions = await CallExecution.countDocuments(query);
   
-  // Get successful executions
-  const successfulExecutions = await CallExecution.countDocuments({
+  // Get completed call executions
+  const completedExecutions = await CallExecution.countDocuments({
     ...query,
-    status: 'success'
+    status: CALL_EXECUTION_STATUS.CALL_COMPLETED
   });
   
   // Get failed executions
   const failedExecutions = await CallExecution.countDocuments({
     ...query,
-    status: 'failed'
+    status: CALL_EXECUTION_STATUS.CALL_ERROR
   });
   
   // Get pending executions
   const pendingExecutions = await CallExecution.countDocuments({
     ...query,
-    status: 'pending'
+    status: CALL_EXECUTION_STATUS.PENDING
   });
   
-
-
-
+  // Get not taken calls
+  const notTakenExecutions = await CallExecution.countDocuments({
+    ...query,
+    status: CALL_EXECUTION_STATUS.CALL_NOT_TAKEN
+  });
   
   // Get most common error messages (top 5)
   const errorAggregation = await CallExecution.aggregate([
-    { $match: { ...query, status: 'failed', errorMessage: { $ne: null } } },
+    { $match: { ...query, status: CALL_EXECUTION_STATUS.CALL_ERROR, errorMessage: { $ne: null } } },
     { $group: {
         _id: '$errorMessage',
         count: { $sum: 1 }
@@ -81,10 +84,11 @@ export const getCallExecutionStats = async (options = {}) => {
   
   return {
     totalExecutions,
-    successfulExecutions,
+    completedExecutions,
     failedExecutions,
     pendingExecutions,
-    successRate: totalExecutions > 0 ? (successfulExecutions / totalExecutions) * 100 : 0,
+    notTakenExecutions,
+    successRate: totalExecutions > 0 ? (completedExecutions / totalExecutions) * 100 : 0,
     failureRate: totalExecutions > 0 ? (failedExecutions / totalExecutions) * 100 : 0,
     commonErrors,
     timeRange: {
